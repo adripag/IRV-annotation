@@ -499,6 +499,12 @@ else:
 # --------------------------------------------------
 st.divider()
 
+st.info(
+    "When you click 'Save this annotation', your answer is automatically saved to the "
+    "project Google Sheet. At the end of your work session, please also download your "
+    "CSV file as a personal backup."
+)
+
 st.subheader("Saved annotations for this session")
 
 if st.session_state.annotations:
