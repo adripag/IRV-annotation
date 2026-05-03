@@ -19,27 +19,27 @@ st.set_page_config(
 # --------------------------------------------------
 # Initialize session state
 # --------------------------------------------------
+# --------------------------------------------------
+# Initialize session state
+# --------------------------------------------------
 if "annotations" not in st.session_state:
     st.session_state.annotations = []
-def clear_form():
-    fields_to_clear = [
-        "sentence_input",
-        "verb_input",
-        "irv1",
-        "irv2",
-        "irv3",
-        "subject_status",
-        "irv4",
-        "irv5",
-        "irv6",
-        "subject_number",
-        "irv7",
-        "irv8",
-    ]
 
-    for field in fields_to_clear:
-        if field in st.session_state:
-            del st.session_state[field]
+def clear_form():
+    st.session_state["sentence_input"] = ""
+    st.session_state["verb_input"] = ""
+
+    st.session_state["irv1"] = "Select"
+    st.session_state["irv2"] = "Select"
+    st.session_state["irv3"] = "Select"
+    st.session_state["subject_status"] = "Select"
+    st.session_state["irv4"] = "Select"
+    st.session_state["irv5"] = "Select"
+    st.session_state["irv6"] = "Select"
+    st.session_state["subject_number"] = "Select"
+    st.session_state["irv7"] = "Select"
+    st.session_state["irv8"] = "Select"
+
 
 # --------------------------------------------------
 # Google Sheets connection
@@ -518,9 +518,9 @@ if decision:
                 )
 
                 st.success("Annotation saved to Google Sheets.")
-                if st.button("Start new annotation"):
-                    clear_form()
-                    st.rerun()
+                
+                st.button("Start new annotation", on_click=clear_form)
+                
                 
             except Exception as e:
                 st.error(
