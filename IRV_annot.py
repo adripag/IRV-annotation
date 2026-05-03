@@ -1,3 +1,6 @@
+import gspread
+from google.oauth2.service_account import Credentials
+from datetime import datetime
 import streamlit as st
 import pandas as pd
 from io import StringIO
@@ -18,6 +21,33 @@ st.set_page_config(
 # --------------------------------------------------
 if "annotations" not in st.session_state:
     st.session_state.annotations = []
+
+
+# --------------------------------------------------
+# Google Sheets connection
+# --------------------------------------------------
+@st.cache_resource
+def get_google_worksheet():
+    """Connect to the Google Sheet defined in Streamlit Secrets."""
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    credentials = Credentials.from_service_account_info(
+        st.secrets["google_service_account"],
+        scopes=scopes,
+    )
+
+    client = gspread.authorize(credentials)
+
+    spreadsheet_name = st.secrets["sheets"]["spreadsheet_name"]
+    worksheet_name = st.secrets["sheets"].get("worksheet_name", "Sheet1")
+
+    spreadsheet = client.open(spreadsheet_name)
+    worksheet = spreadsheet.worksheet(worksheet_name)
+
+    return worksheet
 
 
 # --------------------------------------------------
@@ -426,6 +456,7 @@ if decision:
 
         else:
             row = {
+                "timestamp": datetime.now().isoformat(timespec="seconds"),
                 "student_id": student_id,
                 "sentence": sentence,
                 "verb_construction": verb,
@@ -433,9 +464,32 @@ if decision:
                 "reason": reason,
             }
 
+            # Keep a local copy during the current session, so the student can still see/download it.
             st.session_state.annotations.append(row)
 
-            st.success("Annotation saved for this session.")
+            # Save permanently to Google Sheets.
+            try:
+                worksheet = get_google_worksheet()
+                worksheet.append_row(
+                    [
+                        row["timestamp"],
+                        row["student_id"],
+                        row["sentence"],
+                        row["verb_construction"],
+                        row["final_decision"],
+                        row["reason"],
+                    ],
+                    value_input_option="USER_ENTERED",
+                )
+
+                st.success("Annotation saved to Google Sheets.")
+
+            except Exception as e:
+                st.error(
+                    "The annotation was saved only in this session, "
+                    "but it was not saved to Google Sheets."
+                )
+                st.exception(e)
 
 else:
     st.info("Answer the questions above to obtain a decision.")
