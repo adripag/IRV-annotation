@@ -403,9 +403,9 @@ elif irv1 == "No":
                             elif irv7 == "No":
                                 decision = "Annotate as IRV"
                                 reason = (
-                                    "The construction is not inherent, different-sense, "
-                                    "different-subcat, impersonal, middle/inchoative, "
-                                    "reflexive, or reflexive-mutual."
+                                    "IRV.7 [REFL-MUTUAL]: the construction cannot be interpreted "
+                                    "as ordinary reflexive-mutual. At this point in the decision tree, "
+                                    "no exclusion test applies, so the construction is annotated as IRV."
                                 )
 
                         # --------------------------------------------------
