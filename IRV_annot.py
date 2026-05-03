@@ -21,7 +21,25 @@ st.set_page_config(
 # --------------------------------------------------
 if "annotations" not in st.session_state:
     st.session_state.annotations = []
+def clear_form():
+    fields_to_clear = [
+        "sentence_input",
+        "verb_input",
+        "irv1",
+        "irv2",
+        "irv3",
+        "subject_status",
+        "irv4",
+        "irv5",
+        "irv6",
+        "subject_number",
+        "irv7",
+        "irv8",
+    ]
 
+    for field in fields_to_clear:
+        if field in st.session_state:
+            del st.session_state[field]
 
 # --------------------------------------------------
 # Google Sheets connection
@@ -79,8 +97,16 @@ student_id = st.text_input("Student name")
 # --------------------------------------------------
 st.subheader("Sentence / construction")
 
-sentence = st.text_area("Write or paste your sentence", height=100)
-verb = st.text_input("Write the verb + RCLI construction (e.g., 'queixar-se')")
+sentence = st.text_area(
+    "Write or paste your sentence",
+    height=100,
+    key="sentence_input"
+)
+
+verb = st.text_input(
+    "Write the verb + RCLI construction (e.g., 'queixar-se')",
+    key="verb_input"
+)
 
 st.divider()
 
@@ -97,6 +123,7 @@ irv1 = st.radio(
     "IRV.1 [INHERENT]: Does the verb only exist with the RCLI and never occur without it?",
     ["Select", "Yes", "No"],
     index=0,
+    key="irv1",
     help=(
         "Answer YES if the verb normally requires the reflexive clitic. "
         "For example, in Portuguese, 'abster-se' does not normally occur as '*abster'."
@@ -128,6 +155,7 @@ elif irv1 == "No":
         "IRV.2 [DIFF-SENSE]: Given the same verb without the RCLI, are all of its meanings clearly different from the REFLV form?",
         ["Select", "Yes", "No"],
         index=0,
+        key="irv2",
         help=(
             "Answer YES if the reflexive and non-reflexive forms have clearly different meanings, "
             "not just a reflexive object meaning."
@@ -159,6 +187,7 @@ elif irv1 == "No":
             "IRV.3 [DIFF-SUBCAT]: If you remove the reflexive clitic, does the verb require a different complement pattern, beyond simply replacing the clitic with 'si mesmo'?",
             ["Select", "Yes", "No"],
             index=0,
+            key="irv3",
             help=(
                 "Answer YES only if the reflexive and non-reflexive versions require different structures, "
                 "for example a prepositional complement becomes a direct object: "
@@ -193,6 +222,7 @@ elif irv1 == "No":
                 "Does the verb have a subject?",
                 ["Select", "No subject", "Has subject"],
                 index=0,
+                key="subject_status",
                 help=(
                     "Choose 'No subject' for impersonal-like cases such as 'dorme-se muito'. "
                     "Choose 'Has subject' when there is an explicit subject, as in 'a menina se olhou'."
@@ -217,6 +247,7 @@ elif irv1 == "No":
                     "IRV.4 [IMPERS]: Can the RCLI be replaced by an underspecified subject such as 'a gente', 'você', or 'as pessoas' without changing the basic meaning?",
                     ["Select", "Yes", "No"],
                     index=0,
+                    key="irv4",
                     help=(
                         "Try a paraphrase with a generic human subject. "
                         "If the meaning is preserved, the construction is impersonal."
@@ -255,6 +286,7 @@ elif irv1 == "No":
                     "IRV.5 [MIDDLE-INCHO]: Can the reflexive-clitic sentence be explained as the result of someone/something causing the event?",
                     ["Select", "Yes", "No"],
                     index=0,
+                    key="irv5",
                     help=(
                         "Try to build a non-reflexive version with 'alguém', 'as pessoas', "
                         "or 'algo' as the cause. If the non-reflexive version naturally implies "
@@ -290,6 +322,7 @@ elif irv1 == "No":
                         "IRV.6 [REFL]: Can the RCLI be replaced by 'si mesmo/si mesma' or 'a si mesmo/a si mesma'?",
                         ["Select", "Yes", "No"],
                         index=0,
+                        key="irv6",
                         help=(
                             "Answer YES if the clitic behaves like an ordinary reflexive object, "
                             "equivalent to 'himself', 'herself', or 'oneself'."
@@ -323,6 +356,7 @@ elif irv1 == "No":
                             "What type of subject does the construction have?",
                             ["Select", "Singular subject", "Plural or coordinated subject"],
                             index=0,
+                            key="subject_number",
                             help=(
                                 "Choose 'Singular subject' for examples like 'Pedro se ...'. "
                                 "Choose 'Plural or coordinated subject' for examples like 'Pedro e Clara se ...' or 'eles se ...'."
@@ -342,6 +376,7 @@ elif irv1 == "No":
                                 "IRV.7 [REFL-MUTUAL]: Is a reciprocal version possible with a plural subject without changing the meaning?",
                                 ["Select", "Yes", "No"],
                                 index=0,
+                                key="irv7",
                                 help=(
                                     "Try changing the singular subject to a plural subject and adding "
                                     "'um ao outro', 'uma à outra', 'uns aos outros', or 'umas às outras'. "
@@ -382,6 +417,7 @@ elif irv1 == "No":
                                 "IRV.8 [RECIPRO]: Can the construction be paraphrased as A acts on B and B acts on A?",
                                 ["Select", "Yes", "No"],
                                 index=0,
+                                key="irv8",
                                 help=(
                                     "For a coordinated subject, try: A and B PronV ⇔ A V B and B V A. "
                                     "For a plural subject, try: A.PL PronV ⇔ A.PL V A.PL."
@@ -482,7 +518,10 @@ if decision:
                 )
 
                 st.success("Annotation saved to Google Sheets.")
-
+                if st.button("Start new annotation"):
+                    clear_form()
+                    st.rerun()
+                
             except Exception as e:
                 st.error(
                     "The annotation was saved only in this session, "
