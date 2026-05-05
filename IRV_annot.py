@@ -152,7 +152,7 @@ elif irv1 == "No":
     # Test IRV.2
     # --------------------------------------------------
     irv2 = st.radio(
-        "IRV.2 [DIFF-SENSE]: Given the same verb without the RCLI, are all of its meanings clearly different from the REFLV form?",
+        "IRV.2 [DIFF-SENSE]: Does the verb without the reflexive clitic exist, but mean something clearly different?",
         ["Select", "Yes", "No"],
         index=0,
         key="irv2",
@@ -181,39 +181,71 @@ elif irv1 == "No":
     elif irv2 == "No":
 
         # --------------------------------------------------
+        # --------------------------------------------------
         # Test IRV.3
         # --------------------------------------------------
         irv3 = st.radio(
-            "IRV.3 [DIFF-SUBCAT]: If you remove the reflexive clitic, does the verb require a different complement pattern, beyond simply replacing the clitic with 'si mesmo'?",
+            "IRV.3 [DIFF-PATTERN]: Does the form with 'se' follow a special verb pattern that the form without 'se' does not use with the same meaning?",
             ["Select", "Yes", "No"],
             index=0,
             key="irv3",
             help=(
-                "Answer YES only if the reflexive and non-reflexive versions require different structures, "
-                "for example a prepositional complement becomes a direct object: "
-                "'X se esqueceu de Y' vs. 'X esqueceu Y'. "
-                "Answer NO if the clitic can simply be replaced by 'a si mesmo/a si mesma', as in "
-                "'A menina se olhou' vs. 'A menina olhou a si mesma'."
+                "Answer YES when the form with 'se' is required to express this verb meaning "
+                "in the reference pattern used for annotation. If the same meaning is not preserved "
+                "without 'se', annotate as IRV. Note: in some varieties of Brazilian Portuguese, "
+                "'se' may be omitted with some verbs in informal usage. For this task, follow the "
+                "standard/reference pattern of the verb."
             )
         )
 
-        with st.expander("Examples for IRV.3 [DIFF-SUBCAT]"):
+        with st.expander("Examples for IRV.3 [DIFF-PATTERN]"):
             st.caption(
-                "YES for example: X se esqueceu de Y ⇔ X esqueceu Y. "
-                "The reflexive form uses 'de Y', while the non-reflexive form takes 'Y' directly. "
+                "YES example: Ela se dignou a responder. "
+                "The verb is used in the pattern 'dignar-se a fazer algo'. "
+                "The form without 'se' does not normally work in this pattern: "
+                "'*Ela dignou a responder'. "
                 "Decision: annotate as IRV."
             )
             st.caption(
-                "NO example: A menina se olhou no espelho ⇔ A menina olhou a si mesma no espelho. "
-                "Here, 'se' is just the reflexive object, so this is not a different complement pattern. "
-                "Decision: go to the next test."
+                "YES example: Ele se prontificou a ajudar. "
+                "The verb is used in the pattern 'prontificar-se a fazer algo'. "
+                "The form without 'se' does not normally work in this pattern: "
+                "'*Ele prontificou a ajudar'. "
+                "Decision: annotate as IRV."
+            )
+            st.caption(
+                "YES example: Ela se referiu à diretora. "
+                "The form with 'se' means 'refer to someone/something'. "
+                "Without 'se', the verb does not express the same meaning in the same way. "
+                "Decision: annotate as IRV."
+            )
+            st.caption(
+                "YES example: O detetive se deparou com um problema. "
+                "The form with 'se' means 'come across/find oneself facing something'. "
+                "Without 'se', the same meaning is not naturally available. "
+                "Decision: annotate as IRV."
+            )
+            st.caption(
+                "NO example: Ela se olhou no espelho ⇔ Ela olhou a si mesma no espelho. "
+                "Here, 'se' simply means 'a si mesma'. This is an ordinary reflexive use, "
+                "not a special verb pattern. Decision: go to the next test."
+            )
+            st.caption(
+                "NO example: Vende-se casa / Aluga-se apartamento. "
+                "These are passive-like or impersonal uses, not special lexical patterns of the verb with 'se'. "
+                "Decision: continue to the next tests."
+            )
+            st.caption(
+                "Note for Brazilian Portuguese: some speakers may omit 'se' with certain verbs in informal usage. "
+                "For this annotation task, follow the reference pattern: if the verb meaning is conventionally "
+                "associated with the 'se' form, treat it as a 'se' verb."
             )
 
         if irv3 == "Yes":
             decision = "Annotate as IRV"
             reason = (
-                "IRV.3 [DIFF-SUBCAT]: removing the reflexive clitic changes "
-                "the structure or complement required by the verb."
+                "IRV.3 [DIFF-PATTERN]: the form with 'se' follows a special verb pattern, "
+                "and the same meaning is not preserved without 'se'."
             )
 
         elif irv3 == "No":
@@ -228,17 +260,6 @@ elif irv1 == "No":
                     "Choose 'Has subject' when there is an explicit subject, as in 'a menina se olhou'."
                 )
             )
-
-            with st.expander("Examples for subject status"):
-                st.caption(
-                    "NO SUBJECT for example: dorme-se muito no inverno. "
-                    "There is no explicit participant before the verb."
-                )
-                st.caption(
-                    "HAS SUBJECT example: a menina se olhou no espelho. "
-                    "The subject is 'a menina'."
-                )
-
             # --------------------------------------------------
             # Test IRV.4
             # --------------------------------------------------
