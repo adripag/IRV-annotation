@@ -200,10 +200,10 @@ elif irv1 == "No":
 
         with st.expander("Examples for IRV.3 [DIFF-PATTERN]"):
             st.caption(
-                "YES example: Ela se dignou a responder. "
-                "The verb is used in the pattern 'dignar-se a fazer algo'. "
+                "YES example: Ela não se dignou de responder. "
+                "The verb is used in the pattern 'dignar-se de fazer algo'. "
                 "The form without 'se' does not normally work in this pattern: "
-                "'*Ela dignou a responder'. "
+                "'*Ela dignou de responder'. "
                 "Decision: annotate as IRV."
             )
             st.caption(
