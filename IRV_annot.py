@@ -115,7 +115,7 @@ st.subheader("Decision procedure")
 
 st.markdown(
     """
-    **New workflow:** first exclude transparent uses of **se**.  
+    First exclude uses of **se** that do not qualify as **IRV**.  
     Only after that, test whether the construction should be annotated as **IRV**.
     """
 )
@@ -279,7 +279,7 @@ elif refl_test == "No":
                 # Test 5: Middle/inchoative
                 # --------------------------------------------------
                 middle_test = st.radio(
-                    "5. Middle/inchoative: Does the subject change state or enter a state?",
+                    "5. Middle/inchoative: Does verb + se mean that the subject becomes different, changes condition, or enters a new state and no explicit agent is mentioned?",
                     ["Select", "Yes", "No"],
                     index=0,
                     key="middle_test",
