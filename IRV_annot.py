@@ -18,6 +18,7 @@ st.set_page_config(
 
 
 # --------------------------------------------------
+# # --------------------------------------------------
 # Initialize session state
 # --------------------------------------------------
 if "annotations" not in st.session_state:
@@ -44,7 +45,7 @@ def apply_pending_clear_form():
             "sentence_input",
             "verb_input",
 
-            # Current workflow tests
+            # Current workflow keys
             "refl_test",
             "reciprocal_test",
             "passive_test",
@@ -54,7 +55,7 @@ def apply_pending_clear_form():
             "diff_sense_test",
             "special_pattern_test",
 
-            # Older workflow keys, kept for safety if a browser session still has them
+            # Old workflow keys, kept for safety
             "irv1",
             "irv2",
             "irv3",
@@ -76,7 +77,6 @@ def apply_pending_clear_form():
 
 
 apply_pending_clear_form()
-
 
 
 # --------------------------------------------------
@@ -238,7 +238,7 @@ elif refl_test == "No":
         # Test 3: Passive-like se
         # --------------------------------------------------
         passive_test = st.radio(
-            "3. Passive-like se: Can the sentence be turned into a passive sentence? Can the noun after the verb become the subject of a passive sentence with 'ser + participle'",
+            "3. Passive-like se: Can the sentence be turned into a passive sentence? Can the entity in the se-construction become the subject of a passive sentence with 'ser + participle'",
             ["Select", "Yes", "No"],
             index=0,
             key="passive_test",
@@ -572,7 +572,7 @@ if decision:
     if st.session_state.show_start_new:
         if st.button("Start new annotation"):
             clear_form()
-            st.session_state.show_start_new = False
+#            st.session_state.show_start_new = False
             st.rerun()
 
 else:
