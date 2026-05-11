@@ -1,6 +1,7 @@
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import streamlit as st
 import pandas as pd
 from io import StringIO
@@ -19,26 +20,27 @@ st.set_page_config(
 # --------------------------------------------------
 # Initialize session state
 # --------------------------------------------------
-# --------------------------------------------------
-# Initialize session state
-# --------------------------------------------------
 if "annotations" not in st.session_state:
     st.session_state.annotations = []
 
-def clear_form():
-    st.session_state["sentence_input"] = ""
-    st.session_state["verb_input"] = ""
 
-    st.session_state["irv1"] = "Select"
-    st.session_state["irv2"] = "Select"
-    st.session_state["irv3"] = "Select"
-    st.session_state["subject_status"] = "Select"
-    st.session_state["irv4"] = "Select"
-    st.session_state["irv5"] = "Select"
-    st.session_state["irv6"] = "Select"
-    st.session_state["subject_number"] = "Select"
-    st.session_state["irv7"] = "Select"
-    st.session_state["irv8"] = "Select"
+def clear_form():
+    """Clear the current annotation form, but keep the student name and saved rows."""
+    fields_to_reset = {
+        "sentence_input": "",
+        "verb_input": "",
+        "refl_test": "Select",
+        "reciprocal_test": "Select",
+        "passive_test": "Select",
+        "impersonal_test": "Select",
+        "middle_test": "Select",
+        "requires_se_test": "Select",
+        "diff_sense_test": "Select",
+        "special_pattern_test": "Select",
+    }
+
+    for key, value in fields_to_reset.items():
+        st.session_state[key] = value
 
 
 # --------------------------------------------------
@@ -70,7 +72,6 @@ def get_google_worksheet():
 # --------------------------------------------------
 # Title
 # --------------------------------------------------
-
 st.title("IRV-specific Decision Tree")
 
 st.write(
@@ -80,7 +81,7 @@ st.write(
 
 st.info(
     "Answer the tests in order. Once the app gives a final decision, stop.\n\n"
-    "Legend: RCLI = reflexive clitic; REFLV = reflexive-clitic verb form."
+    "Legend: RCLI = reflexive clitic; IRV = inherently reflexive verb."
 )
 
 
@@ -112,365 +113,327 @@ st.divider()
 
 st.subheader("Decision procedure")
 
+st.markdown(
+    """
+    **New workflow:** first exclude transparent uses of **se**.  
+    Only after that, test whether the construction should be annotated as **IRV**.
+    """
+)
+
 decision = None
 reason = None
 
 
+# ==================================================
+# EXCLUSION TESTS
+# ==================================================
+st.markdown("### A. Exclusion tests: cases that are NOT annotated as IRV")
+
+
 # --------------------------------------------------
-# Test IRV.1
+# Test 1: Ordinary reflexive
 # --------------------------------------------------
-irv1 = st.radio(
-    "IRV.1 [INHERENT]: Does the verb only exist with the RCLI and never occur without it?",
+refl_test = st.radio(
+    "1. Ordinary reflexive: Can 'se' be replaced by 'a si mesmo/a si mesma/a si mesmos/a si mesmas'?",
     ["Select", "Yes", "No"],
     index=0,
-    key="irv1",
+    key="refl_test",
     help=(
-        "Answer YES if the verb normally requires the reflexive clitic. "
-        "For example, in Portuguese, 'abster-se' does not normally occur as '*abster'."
+        "Answer YES if 'se' means that the subject acts on itself/himself/herself. "
+        "If YES, this is ordinary reflexive and should NOT be annotated as IRV."
     )
 )
 
-with st.expander("Examples for IRV.1 [INHERENT]"):
+with st.expander("Examples for 1. Ordinary reflexive"):
     st.caption(
-        "YES for example: abster-se ⇒ abster. "
-        "The verb normally requires the reflexive clitic. "
-        "Decision: annotate as IRV."
+        "YES example: Ela se olhou no espelho ⇔ Ela olhou a si mesma no espelho. "
+        "Decision: do NOT annotate as IRV."
     )
     st.caption(
-        "NO for example: olhar-se ⇒ olhar. "
-        "The verb 'olhar' exists without the clitic and keeps a related meaning. "
-        "Decision: go to the next test."
+        "YES example: Paulo se lavou ⇔ Paulo lavou a si mesmo. "
+        "Decision: do NOT annotate as IRV."
+    )
+    st.caption(
+        "NO example: Ela se queixou do atraso ⇏ Ela queixou a si mesma do atraso. "
+        "Decision: continue to the next test."
     )
 
-if irv1 == "Yes":
-    decision = "Annotate as IRV"
-    reason = "IRV.1 [INHERENT]: the verb only exists with the reflexive clitic."
+if refl_test == "Yes":
+    decision = "Do NOT annotate as IRV"
+    reason = "Test 1 [REFL]: 'se' is an ordinary reflexive object."
 
-elif irv1 == "No":
+elif refl_test == "No":
 
     # --------------------------------------------------
-    # Test IRV.2
+    # Test 2: Reciprocal
     # --------------------------------------------------
-    irv2 = st.radio(
-        "IRV.2 [DIFF-SENSE]: Does the verb without the reflexive clitic exist, but mean something clearly different?",
+    reciprocal_test = st.radio(
+        "2. Reciprocal: Does 'se' mean 'um ao outro/uma à outra/uns aos outros'?",
         ["Select", "Yes", "No"],
         index=0,
-        key="irv2",
+        key="reciprocal_test",
         help=(
-            "Answer YES if the reflexive and non-reflexive forms have clearly different meanings, "
-            "not just a reflexive object meaning."
+            "Answer YES if the subject is plural or coordinated and the participants act on each other. "
+            "If YES, this is reciprocal and should NOT be annotated as IRV."
         )
     )
 
-    with st.expander("Examples for IRV.2 [DIFF-SENSE]"):
+    with st.expander("Examples for 2. Reciprocal"):
         st.caption(
-            "YES example: referir-se ≠ referir. "
-            "The reflexive and non-reflexive forms have clearly different meanings. "
-            "Decision: annotate as IRV."
+            "YES example: João e Ana se beijaram ⇔ João beijou Ana e Ana beijou João. "
+            "Decision: do NOT annotate as IRV."
         )
         st.caption(
-            "NO for example: lavar-se ≈ lavar a si mesmo/a si mesma. "
-            "The non-reflexive form keeps a related meaning; the clitic marks the object as the same person. "
-            "Decision: go to the next test."
+            "YES example: Eles se cumprimentaram ⇔ eles cumprimentaram uns aos outros. "
+            "Decision: do NOT annotate as IRV."
+        )
+        st.caption(
+            "NO example: Eles se queixaram do atraso. "
+            "Here, 'se' does not mean 'um ao outro'. Decision: continue to the next test."
         )
 
-    if irv2 == "Yes":
-        decision = "Annotate as IRV"
-        reason = "IRV.2 [DIFF-SENSE]: the non-reflexive form of the verb has a clearly different meaning."
+    if reciprocal_test == "Yes":
+        decision = "Do NOT annotate as IRV"
+        reason = "Test 2 [RECIPROCAL]: 'se' marks a reciprocal relation."
 
-    elif irv2 == "No":
+    elif reciprocal_test == "No":
 
         # --------------------------------------------------
+        # Test 3: Passive-like se
         # --------------------------------------------------
-        # Test IRV.3
-        # --------------------------------------------------
-        irv3 = st.radio(
-            "IRV.3 [DIFF-PATTERN]: Does the form with 'se' follow a special verb pattern that the form without 'se' does not use with the same meaning?",
+        passive_test = st.radio(
+            "3. Passive-like se: Can the sentence be turned into a passive sentence?",
             ["Select", "Yes", "No"],
             index=0,
-            key="irv3",
+            key="passive_test",
             help=(
-                "Answer YES when the form with 'se' is required to express this verb meaning "
-                "in the reference pattern used for annotation. If the same meaning is not preserved "
-                "without 'se', annotate as IRV. Note: in some varieties of Brazilian Portuguese, "
-                "'se' may be omitted with some verbs in informal usage. For this task, follow the "
-                "standard/reference pattern of the verb."
+                "Try a passive paraphrase with 'ser + participle', such as 'casas são vendidas'. "
+                "If the paraphrase works, do NOT annotate as IRV."
             )
         )
 
-        with st.expander("Examples for IRV.3 [DIFF-PATTERN]"):
+        with st.expander("Examples for 3. Passive-like se"):
             st.caption(
-                "YES example: Ela não se dignou de responder. "
-                "The verb is used in the pattern 'dignar-se de fazer algo'. "
-                "The form without 'se' does not normally work in this pattern: "
-                "'*Ela dignou de responder'. "
-                "Decision: annotate as IRV."
+                "YES example: Vendem-se casas ⇔ Casas são vendidas. "
+                "Decision: do NOT annotate as IRV."
             )
             st.caption(
-                "YES example: Ele se prontificou a ajudar. "
-                "The verb is used in the pattern 'prontificar-se a fazer algo'. "
-                "The form without 'se' does not normally work in this pattern: "
-                "'*Ele prontificou a ajudar'. "
-                "Decision: annotate as IRV."
+                "YES example: Alugam-se apartamentos ⇔ Apartamentos são alugados. "
+                "Decision: do NOT annotate as IRV."
             )
             st.caption(
-                "YES example: Ela se referiu à diretora. "
-                "The form with 'se' means 'refer to someone/something'. "
-                "Without 'se', the verb does not express the same meaning in the same way. "
-                "Decision: annotate as IRV."
+                "YES example: Destaca-se o momento ⇔ O momento é destacado. "
+                "Decision: do NOT annotate as IRV."
             )
             st.caption(
-                "YES example: O detetive se deparou com um problema. "
-                "The form with 'se' means 'come across/find oneself facing something'. "
-                "Without 'se', the same meaning is not naturally available. "
-                "Decision: annotate as IRV."
-            )
-            st.caption(
-                "NO example: Ela se olhou no espelho ⇔ Ela olhou a si mesma no espelho. "
-                "Here, 'se' simply means 'a si mesma'. This is an ordinary reflexive use, "
-                "not a special verb pattern. Decision: go to the next test."
-            )
-            st.caption(
-                "NO example: Vende-se casa / Aluga-se apartamento. "
-                "These are passive-like or impersonal uses, not special lexical patterns of the verb with 'se'. "
-                "Decision: continue to the next tests."
-            )
-            st.caption(
-                "Note for Brazilian Portuguese: some speakers may omit 'se' with certain verbs in informal usage. "
-                "For this annotation task, follow the reference pattern: if the verb meaning is conventionally "
-                "associated with the 'se' form, treat it as a 'se' verb."
+                "NO example: Ela se queixou do atraso. "
+                "This cannot be turned into a passive sentence with the same meaning. "
+                "Decision: continue to the next test."
             )
 
-        if irv3 == "Yes":
-            decision = "Annotate as IRV"
-            reason = (
-                "IRV.3 [DIFF-PATTERN]: the form with 'se' follows a special verb pattern, "
-                "and the same meaning is not preserved without 'se'."
-            )
+        if passive_test == "Yes":
+            decision = "Do NOT annotate as IRV"
+            reason = "Test 3 [PASSIVE-LIKE]: the construction can be paraphrased as a passive sentence."
 
-        elif irv3 == "No":
+        elif passive_test == "No":
 
-            subject_status = st.radio(
-                "Does the verb have a subject?",
-                ["Select", "No subject", "Has subject"],
+            # --------------------------------------------------
+            # Test 4: Impersonal se
+            # --------------------------------------------------
+            impersonal_test = st.radio(
+                "4. Impersonal se: Is there no specific subject, and can the meaning be paraphrased with 'as pessoas', 'alguém', or 'a gente'?",
+                ["Select", "Yes", "No"],
                 index=0,
-                key="subject_status",
+                key="impersonal_test",
                 help=(
-                    "Choose 'No subject' for impersonal-like cases such as 'dorme-se muito'. "
-                    "Choose 'Has subject' when there is an explicit subject, as in 'a menina se olhou'."
+                    "Answer YES if the sentence has a generic human interpretation, "
+                    "without a specific subject."
                 )
             )
-            # --------------------------------------------------
-            # Test IRV.4
-            # --------------------------------------------------
-            if subject_status == "No subject":
-                irv4 = st.radio(
-                    "IRV.4 [IMPERS]: Can the RCLI be replaced by an underspecified subject such as 'a gente', 'você', or 'as pessoas' without changing the basic meaning?",
+
+            with st.expander("Examples for 4. Impersonal se"):
+                st.caption(
+                    "YES example: Vive-se bem aqui ⇔ As pessoas vivem bem aqui. "
+                    "Decision: do NOT annotate as IRV."
+                )
+                st.caption(
+                    "YES example: Dorme-se muito no inverno ⇔ As pessoas dormem muito no inverno. "
+                    "Decision: do NOT annotate as IRV."
+                )
+                st.caption(
+                    "YES example: Precisa-se de assistentes ⇔ Alguém precisa de assistentes. "
+                    "Decision: do NOT annotate as IRV."
+                )
+                st.caption(
+                    "NO example: Ela se olhou no espelho. "
+                    "There is a specific subject: 'ela'. Decision: continue to the next test."
+                )
+
+            if impersonal_test == "Yes":
+                decision = "Do NOT annotate as IRV"
+                reason = "Test 4 [IMPERSONAL]: the construction has a generic/underspecified subject."
+
+            elif impersonal_test == "No":
+
+                # --------------------------------------------------
+                # Test 5: Middle/inchoative
+                # --------------------------------------------------
+                middle_test = st.radio(
+                    "5. Middle/inchoative: Does the subject change state or enter a state?",
                     ["Select", "Yes", "No"],
                     index=0,
-                    key="irv4",
+                    key="middle_test",
                     help=(
-                        "Try a paraphrase with a generic human subject. "
-                        "If the meaning is preserved, the construction is impersonal."
+                        "Answer YES if the subject becomes calm/open/broken/scared/worse/etc., "
+                        "often without an explicit agent. If YES, do NOT annotate as IRV."
                     )
                 )
 
-                with st.expander("Examples for IRV.4 [IMPERS]"):
+                with st.expander("Examples for 5. Middle/inchoative"):
                     st.caption(
-                        "YES for example: dorme-se muito no inverno ⇔ as pessoas dormem muito no inverno. "
-                        "The reflexive-clitic form has a generic human interpretation. "
+                        "YES example: O menino se acalmou ⇔ O menino ficou calmo. "
                         "Decision: do NOT annotate as IRV."
                     )
                     st.caption(
-                        "Important: apply this test only when there is no explicit subject. "
-                        "If the sentence has a subject, such as 'a menina se olhou no espelho', "
-                        "skip IRV.4 and continue with IRV.5 [MIDDLE-INCHO]."
-                    )
-
-                if irv4 == "Yes":
-                    decision = "Do NOT annotate as IRV"
-                    reason = "IRV.4 [IMPERS]: the construction is impersonal."
-
-                elif irv4 == "No":
-                    decision = "Annotate as IRV"
-                    reason = "The construction has no subject and is not impersonal."
-
-            # --------------------------------------------------
-            # Tests for constructions with subject
-            # --------------------------------------------------
-            elif subject_status == "Has subject":
-
-                # --------------------------------------------------
-                # Test IRV.5
-                # --------------------------------------------------
-                irv5 = st.radio(
-                    "IRV.5 [MIDDLE-INCHO]: Can the reflexive-clitic sentence be explained as the result of someone/something causing the event?",
-                    ["Select", "Yes", "No"],
-                    index=0,
-                    key="irv5",
-                    help=(
-                        "Try to build a non-reflexive version with 'alguém', 'as pessoas', "
-                        "or 'algo' as the cause. If the non-reflexive version naturally implies "
-                        "the reflexive-clitic version, answer YES."
-                    )
-                )
-
-                with st.expander("Examples for IRV.5 [MIDDLE-INCHO]"):
-                    st.caption(
-                        "YES example: o menino se acalmou ⇐ alguém acalmou o menino. "
-                        "The reflexive-clitic sentence 'o menino se acalmou' can be understood "
-                        "as the result of an external cause: someone calmed the boy. "
-                        "So this is a middle/inchoative alternation. "
+                        "YES example: A porta se abriu ⇔ A porta ficou aberta. "
                         "Decision: do NOT annotate as IRV."
                     )
                     st.caption(
-                        "NO example: o menino se queixou ⇏ alguém queixou o menino. "
-                        "The verb 'queixar-se' does not have a regular non-reflexive causal version "
-                        "like 'queixar alguém'. So 'o menino se queixou' cannot be explained as "
-                        "'someone caused the boy to complain' using the same verb. "
-                        "Decision: go to the next test."
+                        "YES example: A situação se agravou ⇔ A situação ficou mais grave. "
+                        "Decision: do NOT annotate as IRV."
+                    )
+                    st.caption(
+                        "NO example: Ela se referiu à diretora. "
+                        "This is not a change-of-state use. Decision: continue to the IRV tests."
                     )
 
-                if irv5 == "Yes":
+                if middle_test == "Yes":
                     decision = "Do NOT annotate as IRV"
-                    reason = "IRV.5 [MIDDLE-INCHO]: the construction is middle or inchoative."
+                    reason = "Test 5 [MIDDLE/INCHOATIVE]: the subject changes or enters a state."
 
-                elif irv5 == "No":
+                elif middle_test == "No":
+
+                    # ==================================================
+                    # IRV-POSITIVE TESTS
+                    # ==================================================
+                    st.markdown("### B. IRV tests: cases that ARE annotated as IRV")
+
                     # --------------------------------------------------
-                    # Test IRV.6
+                    # Test 6: Verb requires se
                     # --------------------------------------------------
-                    irv6 = st.radio(
-                        "IRV.6 [REFL]: Can the RCLI be replaced by 'si mesmo/si mesma' or 'a si mesmo/a si mesma'?",
+                    requires_se_test = st.radio(
+                        "6. Required se: Does this verb normally require 'se' for this meaning?",
                         ["Select", "Yes", "No"],
                         index=0,
-                        key="irv6",
+                        key="requires_se_test",
                         help=(
-                            "Answer YES if the clitic behaves like an ordinary reflexive object, "
-                            "equivalent to 'himself', 'herself', or 'oneself'."
+                            "Answer YES if the verb is conventionally used with 'se' for this meaning, "
+                            "for example 'queixar-se' or 'abster-se'."
                         )
                     )
 
-                    with st.expander("Examples for IRV.6 [REFL]"):
+                    with st.expander("Examples for 6. Required se"):
                         st.caption(
-                            "YES example: Paulo se lava ⇔ Paulo lava a si mesmo. "
-                            "The clitic can be replaced by 'a si mesmo'. "
-                            "Decision: do NOT annotate as IRV."
+                            "YES example: queixar-se → *queixar. "
+                            "The verb normally requires 'se' for this meaning. "
+                            "Decision: annotate as IRV."
                         )
                         st.caption(
-                            "YES example: A menina se olhou no espelho ⇔ A menina olhou a si mesma no espelho. "
-                            "The clitic functions as the object of 'olhar'. "
-                            "Decision: do NOT annotate as IRV."
+                            "YES example: abster-se → *abster. "
+                            "Decision: annotate as IRV."
                         )
                         st.caption(
-                            "NO example: Paulo se queixou ⇏ Paulo queixou a si mesmo. "
-                            "The clitic cannot be replaced by 'a si mesmo'. "
-                            "Decision: go to the next test."
+                            "YES example: vangloriar-se → *vangloriar. "
+                            "Decision: annotate as IRV."
+                        )
+                        st.caption(
+                            "Note for Brazilian Portuguese: some speakers may omit 'se' with certain verbs in informal usage. "
+                            "For this task, follow the standard/reference pattern used in the guidelines."
                         )
 
-                    if irv6 == "Yes":
-                        decision = "Do NOT annotate as IRV"
-                        reason = "IRV.6 [REFL]: the construction is ordinary reflexive."
+                    if requires_se_test == "Yes":
+                        decision = "Annotate as IRV"
+                        reason = "Test 6 [REQUIRED SE]: the verb normally requires 'se' for this meaning."
 
-                    elif irv6 == "No":
+                    elif requires_se_test == "No":
 
-                        subject_number = st.radio(
-                            "What type of subject does the construction have?",
-                            ["Select", "Singular subject", "Plural or coordinated subject"],
+                        # --------------------------------------------------
+                        # Test 7: Different meaning
+                        # --------------------------------------------------
+                        diff_sense_test = st.radio(
+                            "7. Different meaning: Does the verb without 'se' exist, but mean something clearly different?",
+                            ["Select", "Yes", "No"],
                             index=0,
-                            key="subject_number",
+                            key="diff_sense_test",
                             help=(
-                                "Choose 'Singular subject' for examples like 'Pedro se ...'. "
-                                "Choose 'Plural or coordinated subject' for examples like 'Pedro e Clara se ...' or 'eles se ...'."
+                                "Answer YES if the form without 'se' exists, but has a different meaning "
+                                "from the form with 'se'."
                             )
                         )
 
-                        with st.expander("Examples for subject number"):
-                            st.caption("Singular subject example: Pedro se olhou no espelho.")
-                            st.caption("Plural/coordinated subject example: Pedro e Clara se abraçaram.")
+                        with st.expander("Examples for 7. Different meaning"):
+                            st.caption(
+                                "YES example: encontrar-se ≠ encontrar. "
+                                "'O paciente encontra-se em observação' does not mean the same as 'encontrar o paciente'. "
+                                "Decision: annotate as IRV."
+                            )
+                            st.caption(
+                                "YES example: referir-se ≠ referir. "
+                                "The form with 'se' means 'refer to someone/something'. "
+                                "Decision: annotate as IRV."
+                            )
+                            st.caption(
+                                "YES example: comportar-se ≠ comportar. "
+                                "'Ele se comportou bem' differs from 'comportar algo'. "
+                                "Decision: annotate as IRV."
+                            )
 
-                        # --------------------------------------------------
-                        # Test IRV.7
-                        # --------------------------------------------------
-                        if subject_number == "Singular subject":
+                        if diff_sense_test == "Yes":
+                            decision = "Annotate as IRV"
+                            reason = "Test 7 [DIFFERENT MEANING]: the form without 'se' has a clearly different meaning."
 
-                            irv7 = st.radio(
-                                "IRV.7 [REFL-MUTUAL]: Is a reciprocal version possible with a plural subject without changing the meaning?",
+                        elif diff_sense_test == "No":
+
+                            # --------------------------------------------------
+                            # Test 8: Special se pattern
+                            # --------------------------------------------------
+                            special_pattern_test = st.radio(
+                                "8. Special se-pattern: Is 'se' needed for this verb expression or pattern?",
                                 ["Select", "Yes", "No"],
                                 index=0,
-                                key="irv7",
+                                key="special_pattern_test",
                                 help=(
-                                    "Try changing the singular subject to a plural subject and adding "
-                                    "'um ao outro', 'uma à outra', 'uns aos outros', or 'umas às outras'. "
-                                    "If the meaning remains compatible, answer YES."
+                                    "Answer YES if the verb follows a conventional pattern with 'se', "
+                                    "such as 'dignar-se a fazer algo' or 'prontificar-se a fazer algo'."
                                 )
                             )
 
-                            with st.expander("Examples for IRV.7 [REFL-MUTUAL]"):
+                            with st.expander("Examples for 8. Special se-pattern"):
                                 st.caption(
-                                    "YES example: Pedro se lavou ⇔ Pedro e Ana se lavaram um ao outro. "
-                                    "A reciprocal version is possible. "
-                                    "Decision: do NOT annotate as IRV."
+                                    "YES example: Ela se dignou a responder. "
+                                    "Pattern: 'dignar-se a fazer algo'. "
+                                    "Decision: annotate as IRV."
                                 )
                                 st.caption(
-                                    "NO example: Pedro se queixou ⇏ Pedro e Ana se queixaram um ao outro. "
-                                    "The reciprocal version does not preserve the relevant meaning. "
+                                    "YES example: Ele se prontificou a ajudar. "
+                                    "Pattern: 'prontificar-se a fazer algo'. "
+                                    "Decision: annotate as IRV."
+                                )
+                                st.caption(
+                                    "YES example: O detetive se deparou com um problema. "
+                                    "Pattern: 'deparar-se com algo'. "
                                     "Decision: annotate as IRV."
                                 )
 
-                            if irv7 == "Yes":
-                                decision = "Do NOT annotate as IRV"
-                                reason = "IRV.7 [REFL-MUTUAL]: the construction allows a reflexive-mutual reading."
-
-                            elif irv7 == "No":
+                            if special_pattern_test == "Yes":
                                 decision = "Annotate as IRV"
+                                reason = "Test 8 [SPECIAL SE-PATTERN]: 'se' is part of a conventional verb pattern."
+
+                            elif special_pattern_test == "No":
+                                decision = "REVIEW"
                                 reason = (
-                                    "IRV.7 [REFL-MUTUAL]: the construction cannot be interpreted "
-                                    "as ordinary reflexive-mutual. At this point in the decision tree, "
-                                    "no exclusion test applies, so the construction is annotated as IRV."
-                                )
-
-                        # --------------------------------------------------
-                        # Test IRV.8
-                        # --------------------------------------------------
-                        elif subject_number == "Plural or coordinated subject":
-
-                            irv8 = st.radio(
-                                "IRV.8 [RECIPRO]: Can the construction be paraphrased as A acts on B and B acts on A?",
-                                ["Select", "Yes", "No"],
-                                index=0,
-                                key="irv8",
-                                help=(
-                                    "For a coordinated subject, try: A and B PronV ⇔ A V B and B V A. "
-                                    "For a plural subject, try: A.PL PronV ⇔ A.PL V A.PL."
-                                )
-                            )
-
-                            with st.expander("Examples for IRV.8 [RECIPRO]"):
-                                st.caption(
-                                    "YES example: João e Ana se beijam ⇔ João beija Ana e Ana beija João. "
-                                    "The clitic marks a reciprocal relation. "
-                                    "Decision: do NOT annotate as IRV."
-                                )
-                                st.caption(
-                                    "YES example: os presos se agridem ⇔ os presos agridem os presos. "
-                                    "The event is interpreted reciprocally among members of the group. "
-                                    "Decision: do NOT annotate as IRV."
-                                )
-                                st.caption(
-                                    "NO example: João e Ana se queixaram ⇏ João queixou Ana e Ana queixou João. "
-                                    "The reciprocal paraphrase does not work with the same verb meaning. "
-                                    "Decision: annotate as IRV."
-                                )
-
-                            if irv8 == "Yes":
-                                decision = "Do NOT annotate as IRV"
-                                reason = "IRV.8 [RECIPRO]: the construction is reciprocal."
-
-                            elif irv8 == "No":
-                                decision = "Annotate as IRV"
-                                reason = (
-                                    "The construction is not reciprocal and no previous "
-                                    "exclusion test applied."
+                                    "No exclusion test or IRV-positive test clearly applied. "
+                                    "Mark this case for review."
                                 )
 
 
@@ -484,8 +447,10 @@ st.subheader("Final decision")
 if decision:
     if decision == "Annotate as IRV":
         st.success(decision)
-    else:
+    elif decision == "Do NOT annotate as IRV":
         st.warning(decision)
+    else:
+        st.info(decision)
 
     st.write("**Reason:**", reason)
 
@@ -512,7 +477,7 @@ if decision:
 
         else:
             row = {
-                "timestamp": datetime.now().isoformat(timespec="seconds"),
+                "timestamp": datetime.now(ZoneInfo("America/Sao_Paulo")).isoformat(timespec="seconds"),
                 "student_id": student_id,
                 "sentence": sentence,
                 "verb_construction": verb,
@@ -539,10 +504,9 @@ if decision:
                 )
 
                 st.success("Annotation saved to Google Sheets.")
-                
+
                 st.button("Start new annotation", on_click=clear_form)
-                
-                
+
             except Exception as e:
                 st.error(
                     "The annotation was saved only in this session, "
