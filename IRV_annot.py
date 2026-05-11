@@ -22,41 +22,60 @@ st.set_page_config(
 # --------------------------------------------------
 if "annotations" not in st.session_state:
     st.session_state.annotations = []
+
 if "show_start_new" not in st.session_state:
     st.session_state.show_start_new = False
 
+if "request_clear_form" not in st.session_state:
+    st.session_state.request_clear_form = False
+
+
 def clear_form():
-    """Clear the current annotation form, but keep the student name and saved rows."""
-    fields_to_reset = {
-        # Text fields
-        "sentence_input": "",
-        "verb_input": "",
+    """Request form clearing on the next rerun."""
+    st.session_state.request_clear_form = True
 
-        # Current workflow tests
-        "refl_test": "Select",
-        "reciprocal_test": "Select",
-        "passive_test": "Select",
-        "impersonal_test": "Select",
-        "middle_test": "Select",
-        "requires_se_test": "Select",
-        "diff_sense_test": "Select",
-        "special_pattern_test": "Select",
 
-        # Older workflow keys, kept for safety if a browser session still has them
-        "irv1": "Select",
-        "irv2": "Select",
-        "irv3": "Select",
-        "subject_status": "Select",
-        "irv4": "Select",
-        "irv5": "Select",
-        "irv6": "Select",
-        "subject_number": "Select",
-        "irv7": "Select",
-        "irv8": "Select",
-    }
+def apply_pending_clear_form():
+    """Clear form widgets before they are created."""
+    if st.session_state.get("request_clear_form", False):
 
-    for key, value in fields_to_reset.items():
-        st.session_state[key] = value
+        fields_to_clear = [
+            # Text fields
+            "sentence_input",
+            "verb_input",
+
+            # Current workflow tests
+            "refl_test",
+            "reciprocal_test",
+            "passive_test",
+            "impersonal_test",
+            "middle_test",
+            "requires_se_test",
+            "diff_sense_test",
+            "special_pattern_test",
+
+            # Older workflow keys, kept for safety if a browser session still has them
+            "irv1",
+            "irv2",
+            "irv3",
+            "subject_status",
+            "irv4",
+            "irv5",
+            "irv6",
+            "subject_number",
+            "irv7",
+            "irv8",
+        ]
+
+        for key in fields_to_clear:
+            if key in st.session_state:
+                del st.session_state[key]
+
+        st.session_state.request_clear_form = False
+        st.session_state.show_start_new = False
+
+
+apply_pending_clear_form()
 
 
 
