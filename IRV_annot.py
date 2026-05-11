@@ -22,7 +22,8 @@ st.set_page_config(
 # --------------------------------------------------
 if "annotations" not in st.session_state:
     st.session_state.annotations = []
-
+if "show_start_new" not in st.session_state:
+    st.session_state.show_start_new = False
 
 def clear_form():
     """Clear the current annotation form, but keep the student name and saved rows."""
@@ -184,7 +185,7 @@ elif refl_test == "No":
     # Test 2: Reciprocal
     # --------------------------------------------------
     reciprocal_test = st.radio(
-        "2. Reciprocal: Does 'se' mean 'um ao outro/uma à outra/uns aos outros'?",
+        "2. Reciprocal: Does the sentence have a plural or coordinated subject and does 'se' mean 'um ao outro/uma à outra/uns aos outros'?",
         ["Select", "Yes", "No"],
         index=0,
         key="reciprocal_test",
@@ -497,7 +498,7 @@ if decision:
         if verb:
             st.write(f"Verb construction: `{verb}`")
 
-    # --------------------------------------------------
+     # --------------------------------------------------
     # Save annotation to current session
     # --------------------------------------------------
     st.divider()
@@ -540,10 +541,7 @@ if decision:
                 )
 
                 st.success("Annotation saved to Google Sheets.")
-
-                if st.button("Start new annotation"):
-                    clear_form()
-                    st.rerun()
+                st.session_state.show_start_new = True
 
             except Exception as e:
                 st.error(
@@ -551,6 +549,12 @@ if decision:
                     "but it was not saved to Google Sheets."
                 )
                 st.exception(e)
+
+    if st.session_state.show_start_new:
+        if st.button("Start new annotation"):
+            clear_form()
+            st.session_state.show_start_new = False
+            st.rerun()
 
 else:
     st.info("Answer the questions above to obtain a decision.")
@@ -590,7 +594,6 @@ if st.session_state.annotations:
     if st.button("Clear saved annotations from this session"):
         st.session_state.annotations = []
         st.success("Session annotations cleared. Please refresh the page if the table still appears.")
-
 
 else:
     st.write("No annotations saved yet in this session.")
