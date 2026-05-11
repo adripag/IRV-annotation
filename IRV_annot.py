@@ -27,8 +27,11 @@ if "annotations" not in st.session_state:
 def clear_form():
     """Clear the current annotation form, but keep the student name and saved rows."""
     fields_to_reset = {
+        # Text fields
         "sentence_input": "",
         "verb_input": "",
+
+        # Current workflow tests
         "refl_test": "Select",
         "reciprocal_test": "Select",
         "passive_test": "Select",
@@ -37,10 +40,23 @@ def clear_form():
         "requires_se_test": "Select",
         "diff_sense_test": "Select",
         "special_pattern_test": "Select",
+
+        # Older workflow keys, kept for safety if a browser session still has them
+        "irv1": "Select",
+        "irv2": "Select",
+        "irv3": "Select",
+        "subject_status": "Select",
+        "irv4": "Select",
+        "irv5": "Select",
+        "irv6": "Select",
+        "subject_number": "Select",
+        "irv7": "Select",
+        "irv8": "Select",
     }
 
     for key, value in fields_to_reset.items():
         st.session_state[key] = value
+
 
 
 # --------------------------------------------------
@@ -202,7 +218,7 @@ elif refl_test == "No":
         # Test 3: Passive-like se
         # --------------------------------------------------
         passive_test = st.radio(
-            "3. Passive-like se: Can the sentence be turned into a passive sentence?",
+            "3. Passive-like se: Can the sentence be turned into a passive sentence? Can the noun after the verb become the subject of a passive sentence with 'ser + participle'",
             ["Select", "Yes", "No"],
             index=0,
             key="passive_test",
@@ -223,7 +239,27 @@ elif refl_test == "No":
             )
             st.caption(
                 "YES example: Destaca-se o momento ⇔ O momento é destacado. "
+                "The noun 'o momento' becomes the subject of the passive sentence. "
                 "Decision: do NOT annotate as IRV."
+            )
+
+            st.caption(
+                "NO example: Ela se destacou na competição ⇏ *Ela foi destacada na competição. "
+                "Here, 'destacar-se' means 'stand out', not 'be highlighted/selected'. "
+                "Decision: continue to the next tests."
+            )
+            st.caption(
+                 "YES example with encontrar-se: Encontra-se essa habilidade em animais com polegares opositores "
+                 "⇔ Essa habilidade é encontrada em animais com polegares opositores. "
+                 "The noun 'essa habilidade' becomes the subject of the passive sentence. "
+                 "Decision: do NOT annotate as IRV."
+            )
+
+            st.caption(
+                 "NO example with encontrar-se: O paciente encontra-se em observação "
+                "⇏ *O paciente é encontrado em observação. "
+                "Here, 'encontra-se' means 'is/remains/is located in a state or situation', not 'is found'. "
+                "Decision: continue to the next tests."
             )
             st.caption(
                 "NO example: Ela se queixou do atraso. "
@@ -279,7 +315,7 @@ elif refl_test == "No":
                 # Test 5: Middle/inchoative
                 # --------------------------------------------------
                 middle_test = st.radio(
-                    "5. Middle/inchoative: Does verb + se mean that the subject becomes different, changes condition, or enters a new state and no explicit agent is mentioned?",
+                    "5. Middle/inchoative: Does verb + se imply a change of state or condition and no explicit agent is mentioned?",
                     ["Select", "Yes", "No"],
                     index=0,
                     key="middle_test",
@@ -505,7 +541,9 @@ if decision:
 
                 st.success("Annotation saved to Google Sheets.")
 
-                st.button("Start new annotation", on_click=clear_form)
+                if st.button("Start new annotation"):
+                    clear_form()
+                    st.rerun()
 
             except Exception as e:
                 st.error(
@@ -552,6 +590,7 @@ if st.session_state.annotations:
     if st.button("Clear saved annotations from this session"):
         st.session_state.annotations = []
         st.success("Session annotations cleared. Please refresh the page if the table still appears.")
+
 
 else:
     st.write("No annotations saved yet in this session.")
