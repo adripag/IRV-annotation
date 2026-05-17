@@ -38,10 +38,12 @@ def clear_form():
         # Current dynamic text fields
         f"sentence_input_{st.session_state.form_counter - 1}",
         f"verb_input_{st.session_state.form_counter - 1}",
+        f"student_observations_{st.session_state.form_counter - 1}",
 
         # Older static text fields, kept for safety
         "sentence_input",
         "verb_input",
+        "student_observations",
 
         # Current workflow tests
         "refl_test",
@@ -492,6 +494,18 @@ if decision:
             st.write(f"Verb construction: `{verb}`")
 
     # --------------------------------------------------
+    # Student observations
+    # --------------------------------------------------
+    st.divider()
+    st.subheader("Student observations")
+
+    student_observations = st.text_area(
+        "Optional: write any doubts, comments, or observations about this annotation",
+        height=100,
+        key=f"student_observations_{st.session_state.form_counter}"
+    )
+
+    # --------------------------------------------------
     # Save annotation to current session
     # --------------------------------------------------
     st.divider()
@@ -513,6 +527,7 @@ if decision:
                 "verb_construction": verb,
                 "final_decision": decision,
                 "reason": reason,
+                "student_observations": student_observations,
             }
 
             # Keep a local copy during the current session, so the student can still see/download it.
@@ -529,6 +544,7 @@ if decision:
                         row["verb_construction"],
                         row["final_decision"],
                         row["reason"],
+                        row["student_observations"],
                     ],
                     value_input_option="USER_ENTERED",
                 )
