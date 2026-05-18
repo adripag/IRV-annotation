@@ -500,7 +500,7 @@ if decision:
     st.subheader("Student observations")
 
     student_observations = st.text_area(
-        "Optional: write any doubts, comments, or observations about this annotation",
+        "Explain what led you to this analysis. You may also add any comments, doubts, or observations.",
         height=100,
         key=f"student_observations_{st.session_state.form_counter}"
     )
